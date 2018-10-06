@@ -7,13 +7,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rxdart/subjects.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 import '../models/user.dart';
 import '../models/auth.dart';
 import '../models/task.dart';
 import '../configuration/config.dart';
+
+final FirebaseAuth _auth = FirebaseAuth.instance;
+final GoogleSignIn _googleSignIn = new GoogleSignIn();
 
 class ConnectedTasksModel extends Model {
   List<Task> _tasks = [];
@@ -72,28 +75,46 @@ class TasksModel extends ConnectedTasksModel {
     _isLoading = true;
     notifyListeners();
     try {
-      final http.Response response = await http.get(
-          'https://manager1-ae03e.firebaseio.com/tasks.json/?auth=${_authenticatedUser.token}');
-      final Map<String, dynamic> tasksData = json.decode(response.body);
+      FirebaseUser user = await _auth.currentUser();
+      final DatabaseReference db =
+          FirebaseDatabase.instance.reference().child('tasks/${user.uid}');
 
-      if (tasksData == null) {
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      // Convert tasksData from Map to List
+      DataSnapshot snapshot = await db.once();
+      Map<dynamic, dynamic> val = snapshot.value;
       final List<Task> tasksList = [];
-
-      tasksData.forEach((String taskId, dynamic t) {
+      val.forEach((key, val) {
         final Task task = Task(
-            id: taskId,
-            title: t['title'],
-            amount: t['amount'],
-            image: t['image']);
+          id: key.toString(),
+          title: val['title'],
+          amount: val['amount'],
+          image: val['image'],
+        );
         tasksList.add(task);
       });
       _tasks = tasksList;
+
+      // final http.Response response = await http.get(
+      //     'https://manager1-ae03e.firebaseio.com/tasks.json/?auth=${_authenticatedUser.token}');
+      // final Map<String, dynamic> tasksData = json.decode(response.body);
+
+      // if (tasksData == null) {
+      //   _isLoading = false;
+      //   notifyListeners();
+      //   return;
+      // }
+
+      // // Convert tasksData from Map to List
+      // final List<Task> tasksList = [];
+
+      // tasksData.forEach((String taskId, dynamic t) {
+      //   final Task task = Task(
+      //       id: taskId,
+      //       title: t['title'],
+      //       amount: t['amount'],
+      //       image: t['image']);
+      //   tasksList.add(task);
+      // });
+      // _tasks = tasksList;
 
       _isLoading = false;
       notifyListeners();
@@ -105,17 +126,18 @@ class TasksModel extends ConnectedTasksModel {
   }
 
   Future<bool> addTask(String title, int amount) async {
-    final DatabaseReference db =
-        FirebaseDatabase.instance.reference().child('tasks');
-
     _isLoading = true;
     notifyListeners();
+
+    FirebaseUser user = await _auth.currentUser();
+    final DatabaseReference db =
+        FirebaseDatabase.instance.reference().child('tasks/${user.uid}');
+
     final Map<String, dynamic> taskData = {
       'title': title,
       'amount': amount,
       'image':
           'https://upload.wikimedia.org/wikipedia/commons/6/68/Chocolatebrownie.JPG',
-      'userEmail': _authenticatedUser.email,
       'userId': _authenticatedUser.id
     };
     try {
@@ -172,8 +194,6 @@ class TasksModel extends ConnectedTasksModel {
 class UserModel extends ConnectedTasksModel {
   Timer _authTimer;
   PublishSubject<bool> _userSubject = PublishSubject();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn googleSignIn = new GoogleSignIn();
 
   User get user {
     return _authenticatedUser;
@@ -221,23 +241,19 @@ class UserModel extends ConnectedTasksModel {
     }
   }
 
+//! DONE
   Future<bool> googleAuth() async {
     try {
       _isLoading = true;
       notifyListeners();
-      GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
+      GoogleSignInAccount googleSignInAccount = await _googleSignIn.signIn();
       GoogleSignInAuthentication gSA = await googleSignInAccount.authentication;
 
       FirebaseUser user = await _auth.signInWithGoogle(
           idToken: gSA.idToken, accessToken: gSA.accessToken);
-      print(user);
 
       _authenticatedUser =
           User(id: user.uid, email: user.email, token: gSA.idToken);
-      print(_authenticatedUser);
-
-      print(
-          'User is ${_authenticatedUser.email} + ${_authenticatedUser.token}');
 
       // Toggle isAuthenticated State using RxDart
       _userSubject.add(true);

@@ -5,6 +5,9 @@ import './scoped-models/main.dart';
 import './screens/auth.dart';
 import './screens/email.dart';
 import './screens/home.dart';
+import './screens/taskDetail.dart';
+import './screens/addTask.dart';
+import './screens/updateTask.dart';
 
 class App extends StatefulWidget {
   @override
@@ -42,14 +45,20 @@ class _App extends State<App> {
             switch ('/${pathElements[1]}') {
               case '/':
                 return MaterialPageRoute(builder: (_) {
-                  return _isAuthenticated ? HomePage() : AuthPage();
+                  return _isAuthenticated ? HomePage(_model) : AuthPage();
                 });
               case '/auth':
                 return MaterialPageRoute(builder: (_) => AuthPage());
               case '/email':
                 return MaterialPageRoute(builder: (_) => EmailPage());
               case '/home':
-                return MaterialPageRoute(builder: (_) => HomePage());
+                return MaterialPageRoute(builder: (_) => HomePage(_model));
+              case '/taskDetail':
+                return MaterialPageRoute(builder: (_) => TaskDetailPage());
+              case '/updateTask':
+                return MaterialPageRoute(builder: (_) => UpdateTaskPage());
+              case '/addTask':
+                return MaterialPageRoute(builder: (_) => AddTaskPage());
             }
           },
         ));

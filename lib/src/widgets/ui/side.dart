@@ -17,13 +17,6 @@ class Side extends StatelessWidget {
               Navigator.pushReplacementNamed(context, '/home');
             },
           ),
-          ListTile(
-            leading: Icon(Icons.account_balance),
-            title: Text('Show Tasks'),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/showTasks');
-            },
-          ),
           LogoutListTile()
         ],
       ),

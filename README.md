@@ -1,8 +1,5 @@
-# bare
-
-A new Flutter project.
-
-## Getting Started
-
-For help getting started with Flutter, view our online
-[documentation](https://flutter.io/).
+C Done
+R - D
+U
+D
+Vid
