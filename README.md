@@ -1,4 +1,3 @@
-Single Page Real Time CRUD,
 By User
 iOS
 Facebook OAuth

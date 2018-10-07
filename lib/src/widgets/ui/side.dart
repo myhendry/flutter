@@ -19,7 +19,7 @@ class Side extends StatelessWidget {
           ),
           ListTile(
             leading: Icon(Icons.list),
-            title: Text('Cars'),
+            title: Text('StreamBuilders'),
             onTap: () {
               Navigator.pushReplacementNamed(context, '/cars');
             },

@@ -64,7 +64,7 @@ class _App extends State<App> {
               case '/cars':
                 return MaterialPageRoute(builder: (_) => CarsPage(_model));
               case '/listener':
-                return MaterialPageRoute(builder: (_) => ListenerPage());
+                return MaterialPageRoute(builder: (_) => ListenerPage(_model));
             }
           },
         ));

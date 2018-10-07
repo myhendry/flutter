@@ -13,7 +13,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/user.dart';
 import '../models/auth.dart';
-// import '../models/car.dart';
+import '../models/car.dart';
 import '../models/task.dart';
 import '../configuration/config.dart';
 
@@ -23,7 +23,7 @@ final GoogleSignIn _googleSignIn = new GoogleSignIn();
 class ConnectedTasksModel extends Model {
   List<Task> _tasks = [];
   Task _task;
-  // List<Car> _cars = [];
+  List<Car> _cars = [];
   // Car _car;
   User _authenticatedUser;
   bool _isLoading = false;
@@ -259,6 +259,36 @@ class TasksModel extends ConnectedTasksModel {
 }
 
 class CarModel extends ConnectedTasksModel {
+  List<Car> get allCars {
+    return List.from(_cars);
+  }
+
+  Future<Null> getCars() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final QuerySnapshot query =
+          await Firestore.instance.collection('cars').getDocuments();
+      List<DocumentSnapshot> docs = query.documents;
+      final List<Car> carList = [];
+      if (docs.isNotEmpty) {
+        docs.forEach((doc) {
+          final Car car = Car(
+            id: doc.documentID,
+            name: doc.data['name'],
+            owner: _authenticatedUser.id,
+          );
+          carList.add(car);
+        });
+        _cars = carList;
+      }
+    } catch (e) {
+      print(e);
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> addCar(String name) async {
     _isLoading = true;
     notifyListeners();
@@ -515,6 +545,9 @@ class UserModel extends ConnectedTasksModel {
     prefs.remove('token');
     prefs.remove('userEmail');
     prefs.remove('userId');
+
+    await FirebaseAuth.instance.signOut();
+    await _googleSignIn.signOut();
   }
 
   void setAuthTimeout(int time) {
