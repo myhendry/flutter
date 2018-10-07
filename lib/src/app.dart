@@ -8,6 +8,8 @@ import './screens/home.dart';
 import './screens/taskDetail.dart';
 import './screens/addTask.dart';
 import './screens/updateTask.dart';
+import './screens/cars.dart';
+import './screens/listener.dart';
 
 class App extends StatefulWidget {
   @override
@@ -59,6 +61,10 @@ class _App extends State<App> {
                 return MaterialPageRoute(builder: (_) => UpdateTaskPage());
               case '/addTask':
                 return MaterialPageRoute(builder: (_) => AddTaskPage());
+              case '/cars':
+                return MaterialPageRoute(builder: (_) => CarsPage(_model));
+              case '/listener':
+                return MaterialPageRoute(builder: (_) => ListenerPage());
             }
           },
         ));

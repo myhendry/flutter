@@ -8,10 +8,12 @@ import 'package:rxdart/subjects.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 // import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
+// import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/user.dart';
 import '../models/auth.dart';
+// import '../models/car.dart';
 import '../models/task.dart';
 import '../configuration/config.dart';
 
@@ -21,6 +23,8 @@ final GoogleSignIn _googleSignIn = new GoogleSignIn();
 class ConnectedTasksModel extends Model {
   List<Task> _tasks = [];
   Task _task;
+  // List<Car> _cars = [];
+  // Car _car;
   User _authenticatedUser;
   bool _isLoading = false;
 }
@@ -38,8 +42,12 @@ class TasksModel extends ConnectedTasksModel {
     _isLoading = true;
     notifyListeners();
     try {
-      await http.delete(
-          'https://manager1-ae03e.firebaseio.com/tasks/$selectedTaskId.json?auth=${_authenticatedUser.token}');
+      DocumentReference documentReference =
+          Firestore.instance.collection('tasks').document(selectedTaskId);
+      await documentReference.delete();
+
+      // await http.delete(
+      //     'https://manager1-ae03e.firebaseio.com/tasks/$selectedTaskId.json?auth=${_authenticatedUser.token}');
       _isLoading = false;
       notifyListeners();
       return true;
@@ -75,24 +83,67 @@ class TasksModel extends ConnectedTasksModel {
     _isLoading = true;
     notifyListeners();
     try {
-      FirebaseUser user = await _auth.currentUser();
-      final DatabaseReference db =
-          FirebaseDatabase.instance.reference().child('tasks/${user.uid}');
+      // FirebaseUser user = await _auth.currentUser();
 
-      DataSnapshot snapshot = await db.once();
-      Map<dynamic, dynamic> val = snapshot.value;
+      // GET USING FIRESTORE
+      final QuerySnapshot query =
+          await Firestore.instance.collection('tasks').getDocuments();
+      List<DocumentSnapshot> docs = query.documents;
       final List<Task> tasksList = [];
-      val.forEach((key, val) {
-        final Task task = Task(
-          id: key.toString(),
-          title: val['title'],
-          amount: val['amount'],
-          image: val['image'],
-        );
-        tasksList.add(task);
-      });
-      _tasks = tasksList;
+      if (docs.isNotEmpty) {
+        docs.forEach((doc) {
+          final Task task = Task(
+              id: doc.documentID,
+              title: doc.data['title'],
+              amount: doc.data['amount'],
+              image: doc.data['image']);
+          tasksList.add(task);
+        });
+        _tasks = tasksList;
+      }
 
+      // final DocumentReference docRef =
+      //     Firestore.instance.document('tasks/${user.uid}');
+      // QuerySnapshot query = await docRef.get();
+
+      // query.documents
+
+      // final List<Task> tasksList = [];
+      // if (query.exists) {
+      //   Map<String, dynamic> docs = query.data;
+      //   docs.forEach((key, val) {
+      //     final Task task = Task(
+      //       id: query.documentID,
+      //       title: docs['title'],
+      //       amount: docs['amount'],
+      //       image: docs['image'],
+      //     );
+      //     tasksList.add(task);
+      //   });
+      //   _tasks = tasksList;
+      //   print(_tasks);
+      // }
+
+// #region Alternative
+      // GET USING FIREBASE
+      // final DatabaseReference db =
+      //     FirebaseDatabase.instance.reference().child('tasks/${user.uid}');
+
+      // DataSnapshot snapshot = await db.once();
+      // Map<dynamic, dynamic> val = snapshot.value;
+      // final List<Task> tasksList = [];
+      // val.forEach((key, val) {
+      //   final Task task = Task(
+      //     id: key.toString(),
+      //     title: val['title'],
+      //     amount: val['amount'],
+      //     image: val['image'],
+      //   );
+      //   tasksList.add(task);
+      // });
+      // _tasks = tasksList;
+
+      // GET USING REST
       // final http.Response response = await http.get(
       //     'https://manager1-ae03e.firebaseio.com/tasks.json/?auth=${_authenticatedUser.token}');
       // final Map<String, dynamic> tasksData = json.decode(response.body);
@@ -115,6 +166,7 @@ class TasksModel extends ConnectedTasksModel {
       //   tasksList.add(task);
       // });
       // _tasks = tasksList;
+// #endregion
 
       _isLoading = false;
       notifyListeners();
@@ -129,9 +181,7 @@ class TasksModel extends ConnectedTasksModel {
     _isLoading = true;
     notifyListeners();
 
-    FirebaseUser user = await _auth.currentUser();
-    final DatabaseReference db =
-        FirebaseDatabase.instance.reference().child('tasks/${user.uid}');
+    // FirebaseUser user = await _auth.currentUser();
 
     final Map<String, dynamic> taskData = {
       'title': title,
@@ -141,9 +191,20 @@ class TasksModel extends ConnectedTasksModel {
       'userId': _authenticatedUser.id
     };
     try {
-      // Test Native Firebase
-      await db.push().set(taskData);
+      // ADD USING FIRESTORE
+      // final DocumentReference docRef =
+      //     Firestore.instance.document('tasks/${user.uid}');
+      CollectionReference collectionReference =
+          Firestore.instance.collection('tasks');
+      await collectionReference.add(taskData);
 
+// #region Alternatives
+      // ADD USING REAL TIME FIREBASE
+      // final DatabaseReference db =
+      //     FirebaseDatabase.instance.reference().child('tasks/${user.uid}');
+      //   await db.push().set(taskData);
+
+      // ADD USING REST API
       // final http.Response response = await http.post(
       //     'https://manager1-ae03e.firebaseio.com/tasks.json?auth=${_authenticatedUser.token}',
       //     body: json.encode(taskData));
@@ -153,6 +214,7 @@ class TasksModel extends ConnectedTasksModel {
       //   notifyListeners();
       //   return false;
       // }
+// #endregion
 
       _isLoading = false;
       notifyListeners();
@@ -174,12 +236,63 @@ class TasksModel extends ConnectedTasksModel {
         'amount': amount,
         'image':
             'https://upload.wikimedia.org/wikipedia/commons/6/68/Chocolatebrownie.JPG',
-        'userEmail': _authenticatedUser.email,
         'userId': _authenticatedUser.id
       };
-      await http.put(
-          'https://manager1-ae03e.firebaseio.com/tasks/$id.json?auth=${_authenticatedUser.token}',
-          body: json.encode(updateData));
+      // UPDATE USING FIRESTORE
+      DocumentReference documentReference =
+          Firestore.instance.collection('tasks').document(id);
+      documentReference.updateData(updateData);
+
+      // await http.put(
+      //     'https://manager1-ae03e.firebaseio.com/tasks/$id.json?auth=${_authenticatedUser.token}',
+      //     body: json.encode(updateData));
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+}
+
+class CarModel extends ConnectedTasksModel {
+  Future<bool> addCar(String name) async {
+    _isLoading = true;
+    notifyListeners();
+
+    // FirebaseUser user = await _auth.currentUser();
+
+    final Map<String, dynamic> newCar = {
+      'name': name,
+      'owner': _authenticatedUser.id
+    };
+    try {
+      CollectionReference collectionReference =
+          Firestore.instance.collection('cars');
+      await collectionReference.add(newCar);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print(e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteCar(String id) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      DocumentReference documentReference =
+          Firestore.instance.collection('cars').document(id);
+      await documentReference.delete();
+
       _isLoading = false;
       notifyListeners();
       return true;

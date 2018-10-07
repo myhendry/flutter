@@ -48,7 +48,7 @@ class _UpdateTaskPageState extends State<UpdateTaskPage> {
 
       print(responseStatus);
       if (responseStatus) {
-        Navigator.pushReplacementNamed(context, '/showTasks');
+        Navigator.pushReplacementNamed(context, '/');
       } else {
         showDialog(
             context: context,

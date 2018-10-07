@@ -17,6 +17,20 @@ class Side extends StatelessWidget {
               Navigator.pushReplacementNamed(context, '/home');
             },
           ),
+          ListTile(
+            leading: Icon(Icons.list),
+            title: Text('Cars'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/cars');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.phone),
+            title: Text('Listener'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/listener');
+            },
+          ),
           LogoutListTile()
         ],
       ),
